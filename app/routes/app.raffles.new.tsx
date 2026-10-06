@@ -63,7 +63,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const productId = String(formData.get("productId") ?? "");
   const winnerCount = Number(formData.get("winnerCount") ?? 1);
   const claimWindowMinutes = Math.round(Number(formData.get("claimWindowHours") ?? 48) * 60);
-  const winnerPrice = Math.round(Number(formData.get("winnerPrice")) * 100) / 100;
+  const winnerPriceRaw = String(formData.get("winnerPrice") ?? "").trim();
+  const winnerPrice = winnerPriceRaw === "" ? null : Math.round(Number(winnerPriceRaw) * 100) / 100;
   const minAccountAgeDays = Number(formData.get("minAccountAgeDays") ?? 0);
   const allowedCountries = String(formData.get("allowedCountries") ?? "")
     .split(",")
@@ -88,8 +89,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!Number.isInteger(claimWindowMinutes) || claimWindowMinutes < 60 || claimWindowMinutes > 10079) {
     return { error: "Claim window must be between 1 hour and 167 hours (just under 1 week)." };
   }
-  if (!Number.isFinite(winnerPrice) || winnerPrice < 0.01 || winnerPrice > 1000000) {
-    return { error: "Enter the price winners will pay (at least 0.01)." };
+  if (winnerPrice !== null && (!Number.isFinite(winnerPrice) || winnerPrice < 0.01 || winnerPrice > 1000000)) {
+    return { error: "Winner pays must be between 0.01 and 1,000,000, or left blank." };
   }
   if (!Number.isInteger(minAccountAgeDays) || minAccountAgeDays < 0 || minAccountAgeDays > 3650) {
     return { error: "Minimum account age must be between 0 and 3650 days." };
@@ -398,15 +399,18 @@ export default function NewRaffle() {
                 onChange={(event) => {
                   const next = products.find((product) => product.id === event.currentTarget.value);
                   setProductId(event.currentTarget.value);
-                  setWinnerPrice(next?.variants.nodes[0]?.price ?? "");
                 }}
               >
                 <option value="" disabled>Select a product</option>
                 {products.map((product) => <option key={product.id} value={product.id}>{product.title}</option>)}
               </select>
             </label>
+            <div className="price-summary" aria-live="polite">
+              <span>Product price</span>
+              <strong>{regularPrice ? money(regularPrice) : "Select a product to see its price"}</strong>
+            </div>
             <label>
-              Price winners pay ({currencyCode})
+              Winner pays ({currencyCode}) — optional
               <input
                 name="winnerPrice"
                 type="number"
@@ -414,16 +418,13 @@ export default function NewRaffle() {
                 max="1000000"
                 step="0.01"
                 inputMode="decimal"
-                required
+                placeholder={regularPrice ? `Leave blank to charge ${money(regularPrice)}` : "Leave blank to charge the product price"}
                 value={winnerPrice}
                 onChange={(event) => setWinnerPrice(event.currentTarget.value)}
               />
             </label>
             <p className="form-hint">
-              {regularPrice
-                ? `Regular price: ${money(regularPrice)}. `
-                : "Select a product to see its regular price. "}
-              Winners are charged this price per unit on their checkout page, and it is shown to customers on the storefront and in the winner email.
+              Only fill this in if winners should pay a different amount than the product price. It is charged per unit at checkout and shown to customers on the storefront and in the winner email.
               {regularPrice && winnerPrice && Number(winnerPrice) !== Number(regularPrice)
                 ? ` Customers will see ${money(winnerPrice)} instead of ${money(regularPrice)}.`
                 : ""}

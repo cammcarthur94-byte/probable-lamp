@@ -812,3 +812,14 @@ s-section[slot="aside"] {
     padding: 24px;
   }
 }
+
+.price-summary {
+  align-items: baseline;
+  background: #f1f5f2;
+  border: 1px solid #d3ddd6;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
