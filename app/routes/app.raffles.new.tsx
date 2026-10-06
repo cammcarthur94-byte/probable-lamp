@@ -56,7 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const description = String(formData.get("description") ?? "").trim();
   const productId = String(formData.get("productId") ?? "");
   const winnerCount = Number(formData.get("winnerCount") ?? 1);
-  const claimWindowMinutes = Number(formData.get("claimWindowMinutes") ?? 2880);
+  const claimWindowMinutes = Math.round(Number(formData.get("claimWindowHours") ?? 48) * 60);
   const minAccountAgeDays = Number(formData.get("minAccountAgeDays") ?? 0);
   const allowedCountries = String(formData.get("allowedCountries") ?? "")
     .split(",")
@@ -78,8 +78,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!Number.isInteger(winnerCount) || winnerCount < 1 || winnerCount > 100) {
     return { error: "Winner count must be between 1 and 100." };
   }
-  if (!Number.isInteger(claimWindowMinutes) || claimWindowMinutes < 2 || claimWindowMinutes > 10079) {
-    return { error: "Claim window must be between 2 minutes and 1 week minus 1 minute." };
+  if (!Number.isInteger(claimWindowMinutes) || claimWindowMinutes < 60 || claimWindowMinutes > 10079) {
+    return { error: "Claim window must be between 1 hour and 167 hours (just under 1 week)." };
   }
   if (!Number.isInteger(minAccountAgeDays) || minAccountAgeDays < 0 || minAccountAgeDays > 3650) {
     return { error: "Minimum account age must be between 0 and 3650 days." };
@@ -342,7 +342,7 @@ export default function NewRaffle() {
             </div>
             <div className="form-grid">
               <label>Number of winners<input name="winnerCount" type="number" min={1} max={100} defaultValue={1} required /></label>
-              <label>Claim window (minutes)<input name="claimWindowMinutes" type="number" min={2} max={10079} defaultValue={2880} required /></label>
+              <label>Claim window (hours)<input name="claimWindowHours" type="number" min={1} max={167} step={1} defaultValue={48} required /></label>
               <label>Entry starts<input name="startsAtLocal" type="datetime-local" required /></label>
               <label>Entry deadline<input name="closesAtLocal" type="datetime-local" required /></label>
             </div>

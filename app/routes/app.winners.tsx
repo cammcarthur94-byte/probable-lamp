@@ -241,7 +241,7 @@ export default function WinnersPage() {
             Raffle
             <select name="raffleId" required defaultValue="">
               <option value="" disabled>Select a raffle</option>
-              {raffles.filter((raffle) => raffle.status !== "CANCELLED" && raffle.status !== "COMPLETED").map((raffle) => <option key={raffle.id} value={raffle.id}>{raffle.title} · {raffle.status.toLowerCase()} · {raffle.claimWindowMinutes} min claim window</option>)}
+              {raffles.filter((raffle) => raffle.status !== "CANCELLED" && raffle.status !== "COMPLETED").map((raffle) => <option key={raffle.id} value={raffle.id}>{raffle.title} · {raffle.status.toLowerCase()} · {raffle.claimWindowMinutes % 60 === 0 ? `${raffle.claimWindowMinutes / 60} hr` : `${raffle.claimWindowMinutes} min`} claim window</option>)}
             </select>
           </label>
           <p className="form-hint">Each draft order reserves one MSRP variant until the raffle’s claim deadline. Expired claims automatically promote the next ranked eligible entrant. The email contains an account-bound claim link, never the invoice URL.</p>
