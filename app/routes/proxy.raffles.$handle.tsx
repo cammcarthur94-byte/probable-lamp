@@ -151,7 +151,7 @@ export default function StorefrontRaffle() {
         <h1>{raffle.title}</h1>
         <h2>{raffle.productTitle}</h2>
         {raffle.description && <p className="storefront-description">{raffle.description}</p>}
-        <p className="storefront-meta">Entries open {new Date(raffle.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" })} and close {new Date(raffle.closesAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" })} (your local time).</p>
+        <p className="storefront-meta">Entries open {new Date(raffle.startsAt).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })} and close {new Date(raffle.closesAt).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })} (your local time).</p>
         {raffle.winnerPrice != null && (
           <p className="storefront-meta"><strong>Winner price: {formatMoney(raffle.winnerPrice, raffle.priceCurrency)}</strong></p>
         )}

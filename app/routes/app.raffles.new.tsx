@@ -320,8 +320,12 @@ export default function NewRaffle() {
     const date = new Date(local);
     if (!local || Number.isNaN(date.getTime())) return "Not set";
     return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "full",
-      timeStyle: "short",
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       timeZoneName: "short",
     }).format(date);
   };
