@@ -1,0 +1,51 @@
+{
+  "name": "fairdrop-shopify-app",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "npm run build:theme-assets && react-router build",
+    "build:theme-assets": "esbuild extensions/raffle-entry/assets/raffle-entry.js --minify --outfile=extensions/raffle-entry/assets/raffle-entry.min.js",
+    "dev": "npm run build:theme-assets && shopify app dev --theme-app-extension-port 9493",
+    "start": "react-router-serve ./build/server/index.js",
+    "setup": "prisma generate && prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "test": "node --test app/lib/eligibility.test.mjs app/lib/entry-protection.test.mjs app/lib/entry-identities.test.mjs app/lib/claim.test.mjs app/lib/manual-email.test.mjs app/lib/raffles.test.mjs app/lib/expiry-logic.test.mjs app/lib/purge-schedule.test.mjs app/lib/product-publication-policy.test.mjs",
+    "typecheck": "react-router typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "@react-router/fs-routes": "7.18.2",
+    "@react-router/node": "7.18.2",
+    "@react-router/serve": "7.18.2",
+    "@shopify/app-bridge-react": "^4.2.4",
+    "@shopify/shopify-app-react-router": "^3.0.1",
+    "@shopify/shopify-app-session-storage-prisma": "^11.0.0",
+    "@upstash/qstash": "^2.8.4",
+    "isbot": "^5.1.31",
+    "libphonenumber-js": "^1.13.14",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "7.18.2"
+  },
+  "devDependencies": {
+    "@react-router/dev": "7.18.2",
+    "@shopify/polaris-types": "1.0.1",
+    "@types/node": "^25.5.2",
+    "@types/react": "^18.3.25",
+    "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.28.2",
+    "prisma": "^6.19.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.0.4"
+  },
+  "workspaces": {
+    "packages": [
+      "extensions/*"
+    ]
+  }
+}

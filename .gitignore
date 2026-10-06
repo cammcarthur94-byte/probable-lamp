@@ -1,0 +1,10 @@
+node_modules
+/build
+/dist
+/.react-router
+/prisma/dev.sqlite
+/prisma/dev.sqlite-journal
+.env
+.env.*
+!.env.example
+npm-debug.log*

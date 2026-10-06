@@ -1,0 +1,5 @@
+api_version = "2026-10"
+type = "theme"
+name = "Fairdrop raffle entry"
+handle = "fairdrop-raffle-entry"
+uid = "3233c7b1-07eb-27fa-bdbe-f93d7334f69b94593d93"

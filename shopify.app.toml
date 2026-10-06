@@ -1,0 +1,56 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "74744f5817438a8a16f66fa88a02e7f2"
+application_url = "https://shopify.dev/apps/default-app-home"
+embedded = true
+name = "RaffleDrop"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_discounts,read_draft_orders,read_orders,read_products,read_publications,write_app_proxy,write_discounts,write_draft_orders,write_orders,write_publications"
+
+[app_proxy]
+url = "/proxy"
+prefix = "apps"
+subpath = "fairdrop"
+
+[auth]
+redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+
+[webhooks]
+api_version = "2026-10"
+
+[[webhooks.subscriptions]]
+topics = ["orders/create"]
+uri = "/webhooks/orders/create"
+
+[[webhooks.subscriptions]]
+topics = ["orders/paid"]
+uri = "/webhooks/orders/paid"
+
+[[webhooks.subscriptions]]
+topics = ["draft_orders/update"]
+uri = "/webhooks/draft-orders/update"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app/uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app/scopes_update"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request"]
+uri = "/webhooks/customers/data_request"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/redact"]
+uri = "/webhooks/customers/redact"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["shop/redact"]
+uri = "/webhooks/shop/redact"
+
+[build]
+automatically_update_urls_on_dev = true

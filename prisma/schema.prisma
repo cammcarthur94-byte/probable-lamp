@@ -1,0 +1,221 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+
+  @@index([shop])
+}
+
+model Shop {
+  domain        String   @id
+  name          String?
+  storefrontUrl String?
+  emailReplyTo  String?
+  emailSubject  String?
+  emailMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  raffles       Raffle[]
+}
+
+model Raffle {
+  id                             String       @id @default(cuid())
+  shopDomain                     String
+  title                          String
+  handle                         String
+  description                    String       @default("")
+  productId                      String
+  productTitle                   String
+  productImageUrl                String?
+  productVariantId               String
+  winnerCount                    Int          @default(1)
+  rules                          String       @default("{\"requireAccount\":true}")
+  entryCount                     Int          @default(0)
+  startsAt                       DateTime     @default(now())
+  closesAt                       DateTime
+  status                         RaffleStatus @default(ACTIVE)
+  createdAt                      DateTime     @default(now())
+  updatedAt                      DateTime     @updatedAt
+  shop                           Shop         @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  entries                        Entry[]
+  winners                        Winner[]
+  allocations                    Allocation[]
+  auditLogs                      AuditLog[]
+  allowMultipleWinnersPerAddress Boolean      @default(false)
+  claimWindowMinutes             Int          @default(2880)
+  unsoldCount                    Int          @default(0)
+  completedAt                    DateTime?
+  purgeAt                        DateTime?
+  purgeNextRunAt                 DateTime?
+  restrictOnlineStore            Boolean      @default(false)
+  onlineStorePublicationId       String?
+  onlineStorePublishDate         DateTime?
+  onlineStoreWasPublished        Boolean      @default(false)
+  onlineStoreRestrictedAt        DateTime?
+  onlineStoreRestoredAt          DateTime?
+  retentionCouponEnabled         Boolean      @default(false)
+  retentionCouponType            String?
+  retentionCouponValue           Float?
+  retentionCouponExpiryDays      Int?
+
+  @@unique([shopDomain, handle])
+  @@index([shopDomain, status])
+}
+
+model Entry {
+  id                  String      @id @default(cuid())
+  raffleId            String
+  email               String
+  emailHash           String?
+  phoneHash           String?
+  addressHash         String?
+  timeZone            String?
+  drawRank            Int?
+  name                String
+  customerId          String?
+  variantId           String?
+  outcomeEmailSentAt  DateTime?
+  couponEmailSentAt   DateTime?
+  outcomeEmailError   String?
+  retentionCouponCode String?
+  createdAt           DateTime    @default(now())
+  raffle              Raffle      @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  winner              Winner?
+  allocation          Allocation?
+
+  @@unique([raffleId, customerId])
+  @@unique([raffleId, emailHash])
+  @@unique([raffleId, phoneHash])
+  @@index([raffleId, createdAt])
+  @@index([raffleId, drawRank])
+}
+
+model Allocation {
+  id                 String           @id @default(cuid())
+  raffleId           String
+  entryId            String           @unique
+  customerGid        String
+  draftOrderId       String?          @unique
+  invoiceUrl         String?
+  claimTokenHash     String           @unique
+  deadlineAt         DateTime
+  status             AllocationStatus @default(PENDING)
+  openedAt           DateTime?
+  purchasedAt        DateTime?
+  cancelledAt        DateTime?
+  orderId            String?          @unique
+  emailSentAt        DateTime?
+  notificationError  String?
+  expiryLeaseAt      DateTime?
+  expiryLeaseToken   String?
+  issuanceLeaseAt    DateTime?
+  issuanceLeaseToken String?
+  createdAt          DateTime         @default(now())
+  raffle             Raffle           @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  entry              Entry            @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  auditLogs          AuditLog[]
+
+  @@index([raffleId, status])
+  @@index([deadlineAt, status])
+}
+
+model EntryRateLimitBucket {
+  id          String   @id
+  shopDomain  String
+  customerKey String
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@unique([shopDomain, customerKey, windowStart])
+  @@index([windowStart])
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  raffleId     String
+  allocationId String
+  action       String
+  details      String?
+  createdAt    DateTime   @default(now())
+  raffle       Raffle     @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  allocation   Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+
+  @@index([raffleId, createdAt])
+  @@index([allocationId, createdAt])
+}
+
+model WebhookEvent {
+  id          String   @id
+  shopDomain  String
+  topic       String
+  resourceGid String?
+  receivedAt  DateTime @default(now())
+
+  @@index([shopDomain, topic, receivedAt])
+}
+
+model ExpirySweepState {
+  id        String    @id
+  nextRunAt DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+model Winner {
+  id                  String    @id @default(cuid())
+  raffleId            String
+  entryId             String    @unique
+  draftOrderId        String
+  invoiceUrl          String
+  checkoutToken       String    @unique
+  expiresAt           DateTime
+  emailSentAt         DateTime?
+  notificationError   String?
+  draftOrderDeletedAt DateTime?
+  createdAt           DateTime  @default(now())
+  raffle              Raffle    @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  entry               Entry     @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([raffleId, expiresAt])
+  @@index([expiresAt, draftOrderDeletedAt])
+}
+
+enum AllocationStatus {
+  PENDING
+  ISSUED
+  OPENED
+  PURCHASED
+  CANCELLED
+  EXPIRED
+  EXPIRING
+}
+
+enum RaffleStatus {
+  ACTIVE
+  DRAWN
+  COMPLETED
+  CANCELLED
+}

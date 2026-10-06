@@ -1,0 +1,8 @@
+name = "Fairdrop"
+roles = ["frontend", "backend"]
+webhooks_path = "/webhooks/app/uninstalled"
+predev = "npm run setup"
+
+[commands]
+dev = "npm exec react-router dev"
+build = "npm run build"
