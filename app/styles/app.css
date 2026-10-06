@@ -314,10 +314,45 @@ s-section[slot="aside"] {
   gap: 9px;
 }
 
-.admin-form label.admin-form__checkbox input {
-  accent-color: var(--fairdrop-green);
-  min-height: 18px;
-  width: 18px;
+.admin-form label.admin-form__checkbox {
+  cursor: pointer;
+}
+
+.admin-form label.admin-form__checkbox input[type="checkbox"] {
+  appearance: none;
+  background-color: #fff;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+  border: 1.5px solid #8a948e;
+  border-radius: 5px;
+  cursor: pointer;
+  flex: 0 0 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  transition: background-color 0.12s, border-color 0.12s;
+  width: 20px;
+}
+
+.admin-form label.admin-form__checkbox input[type="checkbox"]:hover {
+  border-color: var(--fairdrop-green);
+}
+
+.admin-form label.admin-form__checkbox input[type="checkbox"]:checked {
+  background-color: var(--fairdrop-green);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.5 3.5L13 4.5'/%3E%3C/svg%3E");
+  border-color: var(--fairdrop-green);
+}
+
+.admin-form label.admin-form__checkbox input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--fairdrop-green);
+  outline-offset: 2px;
+}
+
+.admin-form label.admin-form__checkbox:has(input:checked) {
+  color: var(--fairdrop-ink);
+  font-weight: 600;
 }
 
 .admin-form input:not([type="hidden"]),
