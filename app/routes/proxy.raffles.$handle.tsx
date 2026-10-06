@@ -8,6 +8,7 @@ import { verifyEntryProof } from "../lib/entry-protection";
 import { ShopifyCustomerDataAccessError } from "../lib/shopify-customer.server";
 import { getRaffleProductVariants } from "../lib/shopify-product.server";
 import { authenticate } from "../shopify.server";
+import { formatMoney } from "../lib/pricing";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await authenticate.public.appProxy(request);
@@ -23,6 +24,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       productId: true,
       productTitle: true,
       productImageUrl: true,
+      winnerPrice: true,
+      priceCurrency: true,
       status: true,
       startsAt: true,
       closesAt: true,
@@ -148,8 +151,11 @@ export default function StorefrontRaffle() {
         <h1>{raffle.title}</h1>
         <h2>{raffle.productTitle}</h2>
         {raffle.description && <p className="storefront-description">{raffle.description}</p>}
-        <p className="storefront-meta">Entries open {new Date(raffle.startsAt).toLocaleString()} and close {new Date(raffle.closesAt).toLocaleString()}.</p>
-        <p className="storefront-meta">One entry per customer. Winners purchase at the product's regular price.</p>
+        <p className="storefront-meta">Entries open {new Date(raffle.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" })} and close {new Date(raffle.closesAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" })} (your local time).</p>
+        {raffle.winnerPrice != null && (
+          <p className="storefront-meta"><strong>Winner price: {formatMoney(raffle.winnerPrice, raffle.priceCurrency)}</strong></p>
+        )}
+        <p className="storefront-meta">One entry per customer.{raffle.winnerPrice != null ? ` Winners purchase at ${formatMoney(raffle.winnerPrice, raffle.priceCurrency)}.` : ""}</p>
         {result?.success ? (
           <div className="storefront-success" role="status">{result.message}</div>
         ) : (

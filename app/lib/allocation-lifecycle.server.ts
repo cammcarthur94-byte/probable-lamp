@@ -8,6 +8,7 @@ import {
   scheduleAllocationExpiry,
   validateQstashConfiguration,
 } from "./qstash.server";
+import { winnerPriceLabel } from "./pricing";
 import { unauthenticated } from "../shopify.server";
 
 type AdminGraphql = {
@@ -88,6 +89,9 @@ async function createDraft(admin: AdminGraphql, allocation: PendingAllocation) {
         lineItems: [{
           variantId: allocation.entry.variantId ?? allocation.raffle.productVariantId,
           quantity: 1,
+          ...(allocation.raffle.winnerPrice != null && allocation.raffle.priceCurrency
+            ? { priceOverride: { amount: allocation.raffle.winnerPrice.toFixed(2), currencyCode: allocation.raffle.priceCurrency } }
+            : {}),
         }],
         acceptAutomaticDiscounts: false,
         allowDiscountCodesInCheckout: false,
@@ -198,6 +202,7 @@ export async function issuePendingAllocation(allocationId: string, adminOverride
         messageTemplate: allocation.raffle.shop.emailMessage,
         raffleTitle: allocation.raffle.title,
         productTitle: allocation.raffle.productTitle,
+        priceLabel: winnerPriceLabel(allocation.raffle),
         deadlineAt: allocation.deadlineAt,
         timeZone: allocation.entry.timeZone,
         claimUrl: claimUrl(
@@ -255,6 +260,7 @@ export async function sendFreshClaim(allocation: PendingAllocation) {
     messageTemplate: allocation.raffle.shop.emailMessage,
     raffleTitle: allocation.raffle.title,
     productTitle: allocation.raffle.productTitle,
+    priceLabel: winnerPriceLabel(allocation.raffle),
     deadlineAt: allocation.deadlineAt,
     timeZone: allocation.entry.timeZone,
     claimUrl: claimUrl(
@@ -309,6 +315,7 @@ export async function prepareManualWinnerClaim(allocation: PendingAllocation) {
     messageTemplate: allocation.raffle.shop.emailMessage,
     raffleTitle: allocation.raffle.title,
     productTitle: allocation.raffle.productTitle,
+    priceLabel: winnerPriceLabel(allocation.raffle),
     deadlineAt: allocation.deadlineAt,
     timeZone: allocation.entry.timeZone,
     claimUrl: claimUrl(

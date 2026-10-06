@@ -67,6 +67,8 @@ model Raffle {
   auditLogs                      AuditLog[]
   allowMultipleWinnersPerAddress Boolean      @default(false)
   claimWindowMinutes             Int          @default(2880)
+  winnerPrice                    Float?
+  priceCurrency                  String?
   unsoldCount                    Int          @default(0)
   completedAt                    DateTime?
   purgeAt                        DateTime?

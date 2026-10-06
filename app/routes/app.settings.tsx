@@ -5,7 +5,7 @@ import { authenticate } from "../shopify.server";
 
 const DEFAULT_SUBJECT = "You won {{raffle}}!";
 const DEFAULT_MESSAGE =
-  "You were selected as a winner. Claim your opportunity to purchase {{product}} at its regular price.";
+  "You were selected as a winner. Claim your opportunity to purchase {{product}} at the winner price shown below.";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

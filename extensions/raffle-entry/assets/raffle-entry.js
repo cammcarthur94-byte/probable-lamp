@@ -35,9 +35,38 @@
 
   const formatDate = (value) =>
     new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
     }).format(new Date(value));
+
+  const userTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time zone";
+
+  const describeWindow = (raffle) => {
+    const now = Date.now();
+    const start = new Date(raffle.startsAt).getTime();
+    const close = new Date(raffle.closesAt).getTime();
+    const span = (ms) => {
+      const minutes = Math.max(1, Math.round(ms / 60000));
+      if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return `${hours} hour${hours === 1 ? "" : "s"}`;
+      const days = Math.round(hours / 24);
+      return `${days} days`;
+    };
+    if (now < start) return { kind: "upcoming", text: `Opens in ${span(start - now)}` };
+    if (now < close) return { kind: "open", text: `Open now · closes in ${span(close - now)}` };
+    return { kind: "closed", text: "Entries closed" };
+  };
+
+  const winnerPriceText = (raffle) =>
+    raffle.winnerPrice == null
+      ? null
+      : formatPrice(raffle.winnerPrice, raffle.priceCurrency || raffle.currencyCode);
 
   const addText = (parent, tag, className, text) => {
     const element = document.createElement(tag);
@@ -52,11 +81,14 @@
     section.className = "fairdrop-entry-block__rules";
     addText(section, "h4", "", "Entry rules");
     const list = document.createElement("ul");
+    const price = winnerPriceText(raffle);
     const rules = [
       "One entry per customer account.",
       "A customer account and matching account email are required.",
       "Entries are accepted only during the entry window shown above.",
-      "Winners are selected at random and invited to purchase at the regular price. No discount is applied.",
+      price
+        ? `Winners are selected at random and invited to purchase at the winner price of ${price}.`
+        : "Winners are selected at random and invited to purchase at the regular price. No discount is applied.",
     ];
     if (raffle.rules?.requireVerifiedEmail) rules.push("Your customer account email must be verified.");
     if (raffle.rules?.allowedCountries?.length) {
@@ -109,17 +141,37 @@
       addText(summary, "p", "fairdrop-entry-block__description", raffle.description);
     }
     identity.append(summary);
+    const price = winnerPriceText(raffle);
+    if (price) {
+      const regularPrices = new Set((raffle.variants || []).map((variant) => Number(variant.price)));
+      const priceBox = document.createElement("p");
+      priceBox.className = "fairdrop-entry-block__price";
+      addText(priceBox, "span", "fairdrop-entry-block__price-label", "Winner price");
+      addText(priceBox, "strong", "fairdrop-entry-block__price-value", price);
+      if (regularPrices.size === 1) {
+        const [regular] = [...regularPrices];
+        if (Number.isFinite(regular) && regular > Number(raffle.winnerPrice)) {
+          addText(priceBox, "s", "fairdrop-entry-block__price-regular", formatPrice(regular, raffle.currencyCode));
+        }
+      }
+      summary.append(priceBox);
+    }
     card.append(identity);
 
     const dateRange = document.createElement("section");
     dateRange.className = "fairdrop-entry-block__date-range";
     dateRange.setAttribute("aria-label", "Raffle entry dates");
-    addText(dateRange, "h4", "", "Entry window");
+    const windowHeader = document.createElement("div");
+    windowHeader.className = "fairdrop-entry-block__window-header";
+    addText(windowHeader, "h4", "", "Entry window");
+    const state = describeWindow(raffle);
+    addText(windowHeader, "span", `fairdrop-entry-block__badge fairdrop-entry-block__badge--${state.kind}`, state.text);
+    dateRange.append(windowHeader);
     const dateGrid = document.createElement("div");
     dateGrid.className = "fairdrop-entry-block__date-grid";
     for (const [label, value] of [
       ["Entries open", raffle.startsAt],
-      ["Entry deadline", raffle.closesAt],
+      ["Entries close", raffle.closesAt],
     ]) {
       const date = document.createElement("p");
       addText(date, "span", "", label);
@@ -127,6 +179,7 @@
       dateGrid.append(date);
     }
     dateRange.append(dateGrid);
+    addText(dateRange, "p", "fairdrop-entry-block__timezone", `All times are shown in your time zone: ${userTimeZone()}.`);
     card.append(dateRange);
     addRules(card, raffle);
 
@@ -196,17 +249,19 @@
       addText(variantChoice, "h4", "", "Choose your options");
     }
     const optionControls = [];
+    const pillGroups = [];
     for (const optionName of visibleOptionNames) {
-      const label = addText(
-        variantChoice,
-        "label",
-        "fairdrop-entry-block__option-label",
-        optionName,
-      );
+      const group = document.createElement("div");
+      group.className = "fairdrop-entry-block__option-group";
+      group.setAttribute("role", "group");
+      group.setAttribute("aria-label", optionName);
+      addText(group, "span", "fairdrop-entry-block__option-label", optionName);
+      variantChoice.append(group);
       const select = document.createElement("select");
       select.name = `option-${optionName}`;
       select.dataset.optionName = optionName;
       select.required = true;
+      select.hidden = true;
       const values = [...new Set(
         availableVariants.flatMap((variant) =>
           variant.selectedOptions
@@ -214,18 +269,31 @@
             .map((option) => option.value),
         ),
       )];
+      const pills = document.createElement("div");
+      pills.className = "fairdrop-entry-block__pills";
       for (const value of values) {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = value;
         select.append(option);
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "fairdrop-entry-block__pill";
+        pill.textContent = value;
+        pill.dataset.value = value;
+        pill.addEventListener("click", () => {
+          select.value = value;
+          select.dispatchEvent(new Event("change"));
+        });
+        pills.append(pill);
       }
       const firstOption = availableVariants[0].selectedOptions.find(
         (option) => option.name === optionName,
       );
       if (firstOption) select.value = firstOption.value;
-      label.append(select);
+      group.append(pills, select);
       optionControls.push(select);
+      pillGroups.push({ select, pills });
     }
     const priceNotice = addText(
       variantChoice,
@@ -267,9 +335,20 @@
           );
         }
       }
+      for (const { select, pills } of pillGroups) {
+        for (const pill of pills.children) {
+          const selected = select.value === pill.dataset.value;
+          const option = [...select.options].find((item) => item.value === pill.dataset.value);
+          pill.setAttribute("aria-pressed", selected ? "true" : "false");
+          pill.classList.toggle("is-selected", selected);
+          pill.disabled = Boolean(option?.disabled);
+        }
+      }
       if (variant) {
-        priceNotice.textContent =
-          `If selected as a winner, you can purchase this option for ${formatPrice(variant.price, raffle.currencyCode)}.`;
+        const winnerPrice = winnerPriceText(raffle);
+        priceNotice.textContent = winnerPrice
+          ? `If you win, you can purchase this option for ${winnerPrice}.`
+          : `If selected as a winner, you can purchase this option for ${formatPrice(variant.price, raffle.currencyCode)}.`;
         if (variant.image?.url) {
           if (!(productImage instanceof HTMLImageElement)) {
             const image = document.createElement("img");
@@ -345,7 +424,9 @@
       form,
       "small",
       "",
-      "One entry per customer account. Winners are invited to buy at the product’s regular price.",
+      raffle.winnerPrice != null
+        ? `One entry per customer account. Winners are invited to buy at ${formatPrice(raffle.winnerPrice, raffle.priceCurrency || raffle.currencyCode)}.`
+        : "One entry per customer account. Winners are invited to buy at the product’s regular price.",
     );
     form.addEventListener("submit", async (event) => {
       event.preventDefault();

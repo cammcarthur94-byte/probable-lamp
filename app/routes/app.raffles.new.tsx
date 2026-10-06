@@ -19,9 +19,10 @@ type ProductQuery = {
         id: string;
         title: string;
         featuredImage?: { url: string } | null;
-        variants: { nodes: Array<{ id: string; title: string }> };
+        variants: { nodes: Array<{ id: string; title: string; price: string }> };
       }>;
     };
+    shop?: { currencyCode: string };
   };
   errors?: Array<{ message: string }>;
 };
@@ -35,9 +36,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           id
           title
           featuredImage { url }
-          variants(first: 1) { nodes { id title } }
+          variants(first: 1) { nodes { id title price } }
         }
       }
+      shop { currencyCode }
     }`);
   const result = (await response.json()) as ProductQuery;
   if (!response.ok || result.errors?.length) {
@@ -46,7 +48,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const products = (result.data?.products?.nodes ?? []).filter(
     (product) => product.variants.nodes.length > 0,
   );
-  return { products, shopHandle: session.shop.replace(/\.myshopify\.com$/i, "") };
+  return {
+    products,
+    currencyCode: result.data?.shop?.currencyCode ?? "USD",
+    shopHandle: session.shop.replace(/\.myshopify\.com$/i, ""),
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -57,6 +63,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const productId = String(formData.get("productId") ?? "");
   const winnerCount = Number(formData.get("winnerCount") ?? 1);
   const claimWindowMinutes = Math.round(Number(formData.get("claimWindowHours") ?? 48) * 60);
+  const winnerPrice = Math.round(Number(formData.get("winnerPrice")) * 100) / 100;
   const minAccountAgeDays = Number(formData.get("minAccountAgeDays") ?? 0);
   const allowedCountries = String(formData.get("allowedCountries") ?? "")
     .split(",")
@@ -80,6 +87,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   if (!Number.isInteger(claimWindowMinutes) || claimWindowMinutes < 60 || claimWindowMinutes > 10079) {
     return { error: "Claim window must be between 1 hour and 167 hours (just under 1 week)." };
+  }
+  if (!Number.isFinite(winnerPrice) || winnerPrice < 0.01 || winnerPrice > 1000000) {
+    return { error: "Enter the price winners will pay (at least 0.01)." };
   }
   if (!Number.isInteger(minAccountAgeDays) || minAccountAgeDays < 0 || minAccountAgeDays > 3650) {
     return { error: "Minimum account age must be between 0 and 3650 days." };
@@ -137,11 +147,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           featuredImage { url }
           variants(first: 1) { nodes { id } }
         }
+        shop { currencyCode }
       }`,
     { variables: { id: productId } },
   );
   const productResult = (await productResponse.json()) as {
-    data?: { product?: { id: string; title: string; status: string; featuredImage?: { url: string } | null; variants: { nodes: Array<{ id: string }> } } | null };
+    data?: { shop?: { currencyCode: string }; product?: { id: string; title: string; status: string; featuredImage?: { url: string } | null; variants: { nodes: Array<{ id: string }> } } | null };
     errors?: Array<{ message: string }>;
   };
   if (!productResponse.ok || productResult.errors?.length || productResult.data?.product?.status !== "ACTIVE" || !productResult.data.product.variants.nodes[0]) {
@@ -198,6 +209,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       onlineStoreWasPublished: onlineStorePublication?.isPublished ?? false,
       winnerCount,
       claimWindowMinutes,
+      winnerPrice,
+      priceCurrency: productResult.data.shop?.currencyCode ?? "USD",
       allowMultipleWinnersPerAddress: formData.get("allowMultipleWinnersPerAddress") === "on",
       retentionCouponEnabled,
       retentionCouponType: retentionCouponEnabled ? retentionCouponType : null,
@@ -278,12 +291,43 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function NewRaffle() {
-  const { products, shopHandle } = useLoaderData<typeof loader>();
+  const { products, shopHandle, currencyCode } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   const navigation = useNavigation();
   const submitting = navigation.state === "submitting";
   const resultRef = useRef<HTMLDivElement>(null);
   const [retentionCouponEnabled, setRetentionCouponEnabled] = useState(false);
+  const [productId, setProductId] = useState("");
+  const [winnerPrice, setWinnerPrice] = useState("");
+  const [startsLocal, setStartsLocal] = useState("");
+  const [closesLocal, setClosesLocal] = useState("");
+  const [timeZone, setTimeZone] = useState("");
+  useEffect(() => {
+    setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  }, []);
+  const selectedProduct = products.find((product) => product.id === productId);
+  const regularPrice = selectedProduct?.variants.nodes[0]?.price;
+  const money = (value: string | number) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return "";
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode }).format(amount);
+    } catch {
+      return `${amount.toFixed(2)} ${currencyCode}`;
+    }
+  };
+  const describeMoment = (local: string) => {
+    const date = new Date(local);
+    if (!local || Number.isNaN(date.getTime())) return "Not set";
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZoneName: "short",
+    }).format(date);
+  };
+  const tzLabel = timeZone
+    ? `${timeZone.replace(/_/g, " ")} (${new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(new Date()).find((part) => part.type === "timeZoneName")?.value ?? ""})`
+    : "your browser time zone";
   useEffect(() => {
     if (!result) return;
     const failed = "error" in result;
@@ -343,23 +387,63 @@ export default function NewRaffle() {
             <label>Customer-facing description<textarea name="description" rows={3} /></label>
             <label>
               Prize product
-              <select name="productId" required defaultValue="">
+              <select
+                name="productId"
+                required
+                value={productId}
+                onChange={(event) => {
+                  const next = products.find((product) => product.id === event.currentTarget.value);
+                  setProductId(event.currentTarget.value);
+                  setWinnerPrice(next?.variants.nodes[0]?.price ?? "");
+                }}
+              >
                 <option value="" disabled>Select a product</option>
                 {products.map((product) => <option key={product.id} value={product.id}>{product.title}</option>)}
               </select>
             </label>
+            <label>
+              Price winners pay ({currencyCode})
+              <input
+                name="winnerPrice"
+                type="number"
+                min="0.01"
+                max="1000000"
+                step="0.01"
+                inputMode="decimal"
+                required
+                value={winnerPrice}
+                onChange={(event) => setWinnerPrice(event.currentTarget.value)}
+              />
+            </label>
+            <p className="form-hint">
+              {regularPrice
+                ? `Regular price: ${money(regularPrice)}. `
+                : "Select a product to see its regular price. "}
+              Winners are charged this price per unit on their checkout page, and it is shown to customers on the storefront and in the winner email.
+              {regularPrice && winnerPrice && Number(winnerPrice) !== Number(regularPrice)
+                ? ` Customers will see ${money(winnerPrice)} instead of ${money(regularPrice)}.`
+                : ""}
+            </p>
           </section>
           <section className="admin-form__section" aria-labelledby="entry-settings-heading">
             <div className="admin-form__section-heading">
               <h2 id="entry-settings-heading">Entry schedule</h2>
-              <p className="form-hint">Customers can enter once during this window. Winners pay the product’s regular price.</p>
+              <p className="form-hint">Customers can enter once during this window.</p>
+            </div>
+            <div className="timezone-banner" role="note">
+              <strong>Time zone: {tzLabel}</strong>
+              <span>The dates below use your browser’s time zone. Customers see them converted to their own time zone.</span>
             </div>
             <div className="form-grid">
               <label>Number of winners<input name="winnerCount" type="number" min={1} max={100} defaultValue={1} required /></label>
               <label>Claim window (hours)<input name="claimWindowHours" type="number" min={1} max={167} step={1} defaultValue={48} required /></label>
-              <label>Entry starts<input name="startsAtLocal" type="datetime-local" required /></label>
-              <label>Entry deadline<input name="closesAtLocal" type="datetime-local" required /></label>
+              <label>Entries open ({timeZone || "local time"})<input name="startsAtLocal" type="datetime-local" required value={startsLocal} onChange={(event) => setStartsLocal(event.currentTarget.value)} /></label>
+              <label>Entries close ({timeZone || "local time"})<input name="closesAtLocal" type="datetime-local" required value={closesLocal} onChange={(event) => setClosesLocal(event.currentTarget.value)} /></label>
             </div>
+            <dl className="schedule-preview">
+              <div><dt>Entries open</dt><dd>{describeMoment(startsLocal)}</dd></div>
+              <div><dt>Entries close</dt><dd>{describeMoment(closesLocal)}</dd></div>
+            </dl>
             <label className="admin-form__checkbox">
               <input name="allowMultipleWinnersPerAddress" type="checkbox" />
               Allow multiple winners with the same shipping address
@@ -369,7 +453,7 @@ export default function NewRaffle() {
               Keep this product off the Online Store until winner claims are settled
             </label>
             <p className="form-hint">Recommended: keep enabled to prevent non-winners buying the raffle product during entry and winner claims. The entire product (all variants) is hidden from Online Store sales when entries open and remains hidden through the automatic draw, winner claim windows, and waitlist promotions. It is restored for general sale when all prize units are purchased or marked unsold. Other sales channels are unchanged. Place the raffle entry block on a published page that is not the hidden product page. This requires Shopify publication access.</p>
-            <p className="form-hint">Entries close at the deadline. The automatic draw runs on the Fairdrop safety worker, normally within 10 minutes. Times use your browser’s local time zone.</p>
+            <p className="form-hint">Entries close at the deadline. The automatic draw runs on the Fairdrop safety worker, normally within 10 minutes. Times use your browser’s time zone ({tzLabel}).</p>
           </section>
           <section className="admin-form__section" aria-labelledby="eligibility-heading">
             <div className="admin-form__section-heading">

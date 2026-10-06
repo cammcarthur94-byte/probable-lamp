@@ -7,6 +7,7 @@ export type WinnerEmail = {
   messageTemplate: string | null;
   raffleTitle: string;
   productTitle: string;
+  priceLabel?: string | null;
   deadlineAt: Date;
   timeZone: string | null;
   claimUrl: string;
@@ -121,7 +122,7 @@ export function buildWinnerClaimEmailContent(input: Omit<WinnerEmail, "to" | "cl
     values,
   ).slice(0, 180);
   const intro = fillTemplate(
-    input.messageTemplate || "You were selected as a winner. Claim your opportunity to purchase {{product}} at its regular price.",
+    input.messageTemplate || "You were selected as a winner. Claim your opportunity to purchase {{product}} at the winner price shown below.",
     values,
   );
   const text = [
@@ -130,6 +131,7 @@ export function buildWinnerClaimEmailContent(input: Omit<WinnerEmail, "to" | "cl
     intro,
     "",
     `Product: ${input.productTitle}`,
+    ...(input.priceLabel ? [`Your price: ${input.priceLabel}`] : []),
     `Claim deadline: ${deadline}`,
     "",
     `Claim your prize: ${input.claimUrl}`,
@@ -144,7 +146,7 @@ export async function sendWinnerClaimEmail(input: WinnerEmail) {
   const senderName = input.storeName.replace(/[\r\n<>"]/g, "").slice(0, 80) || "Fairdrop";
   const deadline = formatDeadline(input.deadlineAt, input.timeZone);
   const intro = fillTemplate(
-    input.messageTemplate || "You were selected as a winner. Claim your opportunity to purchase {{product}} at its regular price.",
+    input.messageTemplate || "You were selected as a winner. Claim your opportunity to purchase {{product}} at the winner price shown below.",
     {
       raffle: input.raffleTitle,
       product: input.productTitle,
@@ -152,7 +154,7 @@ export async function sendWinnerClaimEmail(input: WinnerEmail) {
       store: input.storeName,
     },
   );
-  const html = `<main style="font-family:Arial,sans-serif;line-height:1.6;color:#202a24"><p>Hi ${escapeHtml(input.winnerName)},</p><p>${escapeHtml(intro).replace(/\n/g, "<br>")}</p><p><strong>Product:</strong> ${escapeHtml(input.productTitle)}<br><strong>Claim deadline:</strong> ${escapeHtml(deadline)}</p><p><a href="${escapeHtml(input.claimUrl)}" style="background:#245f46;border-radius:6px;color:#fff;display:inline-block;padding:12px 20px;text-decoration:none">Claim your prize</a></p><p>This claim link is for the Shopify customer account selected in ${escapeHtml(input.raffleTitle)}.</p><p>${escapeHtml(input.storeName)}</p></main>`;
+  const html = `<main style="font-family:Arial,sans-serif;line-height:1.6;color:#202a24"><p>Hi ${escapeHtml(input.winnerName)},</p><p>${escapeHtml(intro).replace(/\n/g, "<br>")}</p><p><strong>Product:</strong> ${escapeHtml(input.productTitle)}<br>${input.priceLabel ? `<strong>Your price:</strong> ${escapeHtml(input.priceLabel)}<br>` : ""}<strong>Claim deadline:</strong> ${escapeHtml(deadline)}</p><p><a href="${escapeHtml(input.claimUrl)}" style="background:#245f46;border-radius:6px;color:#fff;display:inline-block;padding:12px 20px;text-decoration:none">Claim your prize</a></p><p>This claim link is for the Shopify customer account selected in ${escapeHtml(input.raffleTitle)}.</p><p>${escapeHtml(input.storeName)}</p></main>`;
 
   await provider.send({
     from: `${senderName} <${getSenderAddress()}>`,

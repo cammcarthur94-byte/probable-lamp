@@ -29,6 +29,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         productId: true,
         productTitle: true,
         productImageUrl: true,
+        winnerPrice: true,
+        priceCurrency: true,
         rules: true,
         startsAt: true,
         closesAt: true,

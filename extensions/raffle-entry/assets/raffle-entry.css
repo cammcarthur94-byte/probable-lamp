@@ -302,3 +302,186 @@
     width: 100%;
   }
 }
+
+/* Price */
+.fairdrop-entry-block__price {
+  align-items: baseline;
+  background: #eef5f0;
+  border: 1px solid #c5d9cc;
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 10px 14px;
+  width: fit-content;
+}
+
+.fairdrop-entry-block__price-label {
+  color: var(--fairdrop-widget-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fairdrop-entry-block__price-value {
+  color: var(--fairdrop-widget-accent);
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.fairdrop-entry-block__price-regular {
+  color: var(--fairdrop-widget-muted);
+  font-size: 0.95rem;
+}
+
+/* Entry window */
+.fairdrop-entry-block__date-range,
+.fairdrop-entry-block__rules {
+  background: #fbfcfb;
+  border: 1px solid var(--fairdrop-widget-line);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.fairdrop-entry-block__window-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.fairdrop-entry-block__window-header h4 {
+  margin: 0;
+}
+
+.fairdrop-entry-block__badge {
+  background: #eceeed;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 5px 12px;
+}
+
+.fairdrop-entry-block__badge--open {
+  background: #d9efe0;
+  color: #1c5a38;
+}
+
+.fairdrop-entry-block__badge--upcoming {
+  background: #fdf0cf;
+  color: #7a5400;
+}
+
+.fairdrop-entry-block__badge--closed {
+  background: #f6dcd7;
+  color: #8f2f22;
+}
+
+.fairdrop-entry-block__date-grid p {
+  background: #fff;
+  border-width: 1.5px;
+}
+
+.fairdrop-entry-block__date-grid span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fairdrop-entry-block__date-grid strong {
+  font-size: 1.02rem;
+}
+
+.fairdrop-entry-block__timezone {
+  color: var(--fairdrop-widget-muted);
+  font-size: 0.88rem;
+  margin: 12px 0 0;
+}
+
+/* Entry rules */
+.fairdrop-entry-block__rules ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.fairdrop-entry-block__rules li {
+  background: #fff;
+  border: 1px solid var(--fairdrop-widget-line);
+  border-radius: 8px;
+  padding: 10px 12px 10px 40px;
+  position: relative;
+}
+
+.fairdrop-entry-block__rules li::before {
+  background: var(--fairdrop-widget-accent);
+  border-radius: 50%;
+  color: #fff;
+  content: "?";
+  font-size: 0.72rem;
+  font-weight: 700;
+  height: 18px;
+  left: 12px;
+  line-height: 18px;
+  position: absolute;
+  text-align: center;
+  top: 12px;
+  width: 18px;
+}
+
+/* Option picker */
+.fairdrop-entry-block__option-group {
+  display: grid;
+  gap: 8px;
+}
+
+.fairdrop-entry-block__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fairdrop-entry-block__pill {
+  background: #fff;
+  border: 1.5px solid #bfc8c1;
+  border-radius: 999px;
+  color: var(--fairdrop-widget-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 8px 18px;
+}
+
+.fairdrop-entry-block__pill:hover:not(:disabled) {
+  border-color: var(--fairdrop-widget-accent);
+}
+
+.fairdrop-entry-block__pill.is-selected {
+  background: var(--fairdrop-widget-accent);
+  border-color: var(--fairdrop-widget-accent);
+  color: #fff;
+}
+
+.fairdrop-entry-block__pill:disabled {
+  background: #f1f2f1;
+  border-style: dashed;
+  color: #8b938d;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.fairdrop-entry-block__pill:focus-visible {
+  outline: 2px solid var(--fairdrop-widget-accent);
+  outline-offset: 2px;
+}
+
+.fairdrop-entry-block__price-notice {
+  color: var(--fairdrop-widget-ink);
+  font-weight: 600;
+}
