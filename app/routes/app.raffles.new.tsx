@@ -50,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
   return {
     products,
-    currencyCode: result.data?.shop?.currencyCode ?? "USD",
+    currencyCode: result.data?.shop?.currencyCode ?? "",
     shopHandle: session.shop.replace(/\.myshopify\.com$/i, ""),
   };
 };
@@ -211,7 +211,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       winnerCount,
       claimWindowMinutes,
       winnerPrice,
-      priceCurrency: productResult.data.shop?.currencyCode ?? "USD",
+      priceCurrency: productResult.data.shop?.currencyCode ?? null,
       allowMultipleWinnersPerAddress: formData.get("allowMultipleWinnersPerAddress") === "on",
       retentionCouponEnabled,
       retentionCouponType: retentionCouponEnabled ? retentionCouponType : null,

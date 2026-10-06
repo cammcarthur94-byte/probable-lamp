@@ -52,7 +52,7 @@ export async function getRaffleProductVariants(shopDomain: string, productId: st
   const { admin } = await unauthenticated.admin(shopDomain);
   const variants: RaffleVariant[] = [];
   let optionNames: string[] = [];
-  let currencyCode = "USD";
+  let currencyCode = "";
   let image: { url: string; altText: string | null } | null = null;
   let after: string | null = null;
 
