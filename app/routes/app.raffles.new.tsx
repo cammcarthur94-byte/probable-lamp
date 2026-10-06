@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Form, useActionData, useLoaderData } from "react-router";
-import { useState, type FormEvent } from "react";
+import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import prisma from "../db.server";
 import { ThemeAppBlockOnboarding } from "../components/theme-app-block-onboarding";
 import { makeHandle } from "../lib/raffles.server";
@@ -280,7 +280,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function NewRaffle() {
   const { products, shopHandle } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const submitting = navigation.state === "submitting";
+  const resultRef = useRef<HTMLDivElement>(null);
   const [retentionCouponEnabled, setRetentionCouponEnabled] = useState(false);
+  useEffect(() => {
+    if (!result) return;
+    const failed = "error" in result;
+    const shopifyGlobal = (window as unknown as {
+      shopify?: { toast?: { show: (message: string, options?: { isError?: boolean }) => void } };
+    }).shopify;
+    shopifyGlobal?.toast?.show(failed ? result.error ?? "Could not create raffle" : "Raffle created", { isError: failed });
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
   const prepareSchedule = (event: FormEvent<HTMLFormElement>) => {
     const form = event.currentTarget;
     const startsAtLocal = form.elements.namedItem("startsAtLocal");
@@ -307,16 +319,18 @@ export default function NewRaffle() {
       <p className="page-subheading">Choose a prize product and decide how customers can enter.</p>
       <s-section>
         <Form method="post" className="admin-form" onSubmit={prepareSchedule}>
-          {result && "error" in result && <div className="notice notice--error" role="alert">{result.error}</div>}
-          {result && "created" in result && result.created && (
-            <>
-              <div className="notice notice--success" role="status">Raffle created. Next, add the entry block to a storefront page.</div>
-              <ThemeAppBlockOnboarding shopHandle={shopHandle} />
-            </>
-          )}
-          {result && "warning" in result && result.warning && (
-            <div className="notice notice--error" role="alert">{result.warning}</div>
-          )}
+          <div ref={resultRef}>
+            {result && "error" in result && <div className="notice notice--error" role="alert">{result.error}</div>}
+            {result && "created" in result && result.created && (
+              <>
+                <div className="notice notice--success" role="status">Raffle created. Next, add the entry block to a storefront page, or <a href="/app">return to the dashboard</a>.</div>
+                <ThemeAppBlockOnboarding shopHandle={shopHandle} />
+              </>
+            )}
+            {result && "warning" in result && result.warning && (
+              <div className="notice notice--error" role="alert">{result.warning}</div>
+            )}
+          </div>
           {!products.length && <div className="notice">No active products with variants were found in this shop.</div>}
           <input type="hidden" name="startsAt" />
           <input type="hidden" name="closesAt" />
@@ -413,7 +427,7 @@ export default function NewRaffle() {
             )}
           </section>
           <div className="admin-form__footer">
-            <button className="admin-button admin-button--primary" type="submit" disabled={!products.length}>Create raffle</button>
+            <button className="admin-button admin-button--primary" type="submit" disabled={!products.length || submitting}>{submitting ? "Creating…" : "Create raffle"}</button>
           </div>
         </Form>
       </s-section>
