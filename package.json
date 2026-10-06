@@ -7,6 +7,7 @@
   },
   "scripts": {
     "build": "npm run build:theme-assets && react-router build",
+    "vercel-build": "prisma generate && prisma migrate deploy && npm run build",
     "build:theme-assets": "esbuild extensions/raffle-entry/assets/raffle-entry.js --minify --outfile=extensions/raffle-entry/assets/raffle-entry.min.js",
     "dev": "npm run build:theme-assets && shopify app dev --theme-app-extension-port 9493",
     "start": "react-router-serve ./build/server/index.js",

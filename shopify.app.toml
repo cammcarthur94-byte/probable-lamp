@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "74744f5817438a8a16f66fa88a02e7f2"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://probable-lamp-swart.vercel.app"
 embedded = true
 name = "RaffleDrop"
 
@@ -15,7 +15,10 @@ prefix = "apps"
 subpath = "fairdrop"
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [
+  "https://probable-lamp-swart.vercel.app/auth/callback",
+  "https://probable-lamp-swart.vercel.app/auth/shopify/callback"
+]
 
 [webhooks]
 api_version = "2026-10"

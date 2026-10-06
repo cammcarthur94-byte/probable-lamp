@@ -1,1 +1,0 @@
-ALTER TABLE "Entry" ADD COLUMN "variantId" TEXT;
