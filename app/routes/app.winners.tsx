@@ -296,7 +296,7 @@ export default function WinnersPage() {
         {allocations.length ? (
           <div className="table-scroll">
             <table className="admin-table">
-              <thead><tr><th>Winner</th><th>Email</th><th>Raffle</th><th>Claim deadline</th><th>Status</th><th>Notification</th><th>Action</th></tr></thead>
+              <thead><tr><th>Winner</th><th>Email</th><th>Raffle</th><th>Claim deadline</th><th>Status</th><th>Email status</th><th>Action</th></tr></thead>
               <tbody>
                 {allocations.map((allocation) => {
                   const status = allocation.deadlineAt <= new Date() && ["ISSUED", "OPENED"].includes(allocation.status)
